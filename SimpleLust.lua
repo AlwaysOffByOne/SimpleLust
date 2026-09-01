@@ -30,26 +30,9 @@ local LUST_DEBUFFS = {
     [357745] = true,
 }
 
- -- Buffs can only be found this way, not sure why the buffs can't be found that way
-local function GetLustRemainingTime()
-    for i = 1, 40 do
-        local aura = C_UnitAuras.GetAuraDataByIndex("player", i)
-        if aura then
-            local id = aura.spellId or aura.spellID
-            if id and LUST_BUFFS[id] then
-                if aura.expirationTime then
-                    return aura.expirationTime - GetTime()
-                end
-            end
-        end
-    end
-    return nil
-end
-
--- On the flip side, debuffs can't be found with AuraDataByIndex for some reason
-local function GetSatedDebuffValue()
+local function GetAuraTimeValue(list)
     local found = false
-    for spellID in pairs(LUST_DEBUFFS) do
+    for spellID in pairs(list) do
         local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellID)
         if aura and aura.expirationTime and aura.expirationTime > 0 then
             found = true
@@ -70,8 +53,8 @@ end
 
 
 local function UpdateLustStatus()
-    local buffTime = GetLustRemainingTime()
-    local debuffTime = GetSatedDebuffValue();
+    local buffTime = GetAuraTimeValue(LUST_BUFFS)
+    local debuffTime = GetAuraTimeValue(LUST_DEBUFFS)
 
     if buffTime and buffTime > 0 then
         frame.text:SetText(COLOR_LUSTING .. "Lusting for " .. math.floor(buffTime) .. "s" .. COLOR_END)
