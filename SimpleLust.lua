@@ -41,8 +41,25 @@ local function GetAuraTimeValue(list)
     end
 
     if not found then 
-        return 0
+        return nil
     end 
+end
+
+local function DeriveBuffTime()
+    local buffTime = GetAuraTimeValue(LUST_BUFFS)
+    if buffTime and buffTime > 0 then
+        return buffTime
+    end
+
+    local debuffTime = GetAuraTimeValue(LUST_DEBUFFS)
+    if debuffTime and debuffTime > 0 then
+        local t = debuffTime - 560
+        if t > 0 then
+            return t
+        end
+    end
+
+    return nil
 end
 
 local function FormatTime(sec)
@@ -53,7 +70,7 @@ end
 
 
 local function UpdateLustStatus()
-    local buffTime = GetAuraTimeValue(LUST_BUFFS)
+    local buffTime = DeriveBuffTime()
     local debuffTime = GetAuraTimeValue(LUST_DEBUFFS)
 
     if buffTime and buffTime > 0 then
