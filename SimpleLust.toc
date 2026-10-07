@@ -1,7 +1,7 @@
 ## Interface: 120001
 ## Title: SimpleLust
 ## Notes: Minimal Lust tracker
-## Version: 0.5.4
+## Version: 1.0.0
 ## SavedVariables: SimpleLustDB
 
 ## Category: Self Made
