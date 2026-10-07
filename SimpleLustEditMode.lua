@@ -9,6 +9,7 @@ local settings
 local selection = CreateFrame("Frame", nil, frame, "EditModeSystemSelectionTemplate")
 selection:SetAllPoints()
 selection:EnableMouse(true)
+selection:SetPropagateMouseClicks(false)
 selection:RegisterForDrag("LeftButton")
 selection:Hide()
 
@@ -40,11 +41,7 @@ local function ApplyCurrentLayout()
     end
 
     local layoutName = editMode:GetCurrentLayoutName()
-    local state = settings.layouts[layoutName]
-    if not state then
-        state = CreateDefaultEditModeState()
-        settings.layouts[layoutName] = state
-    end
+    local state = settings.layouts[layoutName] or CreateDefaultEditModeState()
 
     editMode:ApplyState(frame, state)
     editMode:SnapshotBaseState(frame)
@@ -89,11 +86,19 @@ local function InitializeEditMode()
     frame.EditModeStopMock = function()
         selection.isSelected = false
         selection:Hide()
+        addon.HideEditModeSettings()
         addon.UpdateVisibility()
     end
 
     editMode:Register(frame, settings, CreateDefaultEditModeState())
     hooksecurefunc(EditModeManagerFrame, "SelectLayout", QueueCurrentLayout)
+    hooksecurefunc(EditModeManagerFrame, "SelectSystem", function()
+        if selection.isSelected then
+            selection.isSelected = false
+            selection:ShowHighlighted()
+            addon.HideEditModeSettings()
+        end
+    end)
     QueueCurrentLayout()
     initialized = true
 end
@@ -110,7 +115,7 @@ selection:SetScript("OnMouseDown", function(_, button)
     selection:ShowSelected(true)
     selection.isSelected = true
     editMode:SnapshotWorkingState(frame)
-    editMode:ShowConfigForFrame(frame)
+    addon.ShowEditModeSettings()
 end)
 
 selection:SetScript("OnDragStart", function()

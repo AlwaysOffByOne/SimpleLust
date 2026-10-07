@@ -11,85 +11,20 @@ local GetPreviewText = addon.GetPreviewText
 local SetFontInstanceFont = addon.SetFontInstanceFont
 local ResolveFontPath = addon.ResolveFontPath
 
+local DIALOG_WIDTH = 400
+local DIALOG_PADDING = 10
+local DIALOG_HEADER_HEIGHT = 42
+local DIALOG_FOOTER_HEIGHT = 42
+local APPEARANCE_ROW_HEIGHT = 76
+local APPEARANCE_ROW_SPACING = 80
+
+local dialog
 local settingsPanel
 local controls = {}
 local refreshing = false
 local fontOptionObjects = {}
 local fontOptionCount = 0
-local configHooked = false
-
-local function RefreshHostConfig(height)
-    local configFrame = editMode.configFrame
-    if not configFrame then
-        return
-    end
-
-    if height then
-        configFrame.frameSpecificSocket:SetHeight(height)
-    end
-    configFrame.flexContainer:MarkDirty()
-    configFrame.flexContainer:Layout()
-
-    local totalHeight = configFrame.flexContainer:GetHeight()
-        + configFrame.title:GetHeight()
-        + 4 * editMode.CONFIG_FRAME_PADDING
-        + editMode.CONFIG_EDIT_BOX_HEIGHT
-    configFrame:SetHeight(totalHeight)
-end
-
-local function SetSimpleLustConfigMode(enabled)
-    local configFrame = editMode:GetOrCreateConfigFrame()
-    if not configFrame.SimpleLustStandardRows then
-        configFrame.SimpleLustStandardRows = {}
-        for _, child in ipairs({ configFrame.flexContainer:GetChildren() }) do
-            if child ~= configFrame.frameSpecificSocket then
-                table.insert(configFrame.SimpleLustStandardRows, child)
-            end
-        end
-
-        configFrame.SimpleLustOriginalBackdrop = configFrame:GetBackdrop()
-        configFrame.SimpleLustOriginalBackdropColor = {
-            configFrame:GetBackdropColor(),
-        }
-        configFrame.SimpleLustOriginalBorderColor = {
-            configFrame:GetBackdropBorderColor(),
-        }
-        configFrame.SimpleLustBorder = CreateFrame(
-            "Frame",
-            nil,
-            configFrame,
-            "DialogBorderTranslucentTemplate"
-        )
-        configFrame.SimpleLustBorder:Hide()
-    end
-
-    for _, row in ipairs(configFrame.SimpleLustStandardRows) do
-        row:SetShown(not enabled)
-    end
-
-    if enabled then
-        configFrame:SetBackdrop(nil)
-        configFrame.SimpleLustBorder:Show()
-        configFrame.title:SetFontObject("GameFontHighlightLarge")
-    else
-        configFrame:SetBackdrop(configFrame.SimpleLustOriginalBackdrop)
-        configFrame:SetBackdropColor(unpack(configFrame.SimpleLustOriginalBackdropColor))
-        configFrame:SetBackdropBorderColor(unpack(configFrame.SimpleLustOriginalBorderColor))
-        configFrame.SimpleLustBorder:Hide()
-        configFrame.title:SetFontObject("GameFontNormalLarge")
-    end
-
-    RefreshHostConfig()
-
-    if not configHooked then
-        configHooked = true
-        hooksecurefunc(editMode, "ShowConfigForFrame", function(_, targetFrame)
-            if targetFrame ~= frame then
-                SetSimpleLustConfigMode(false)
-            end
-        end)
-    end
-end
+local activeColorPicker
 
 local function GetFontOptionObject(fontName, fontPath)
     if not fontOptionObjects[fontName] then
@@ -102,23 +37,6 @@ local function GetFontOptionObject(fontName, fontPath)
     end
 
     return fontOptionObjects[fontName]
-end
-
-local function SetWorkingColor(state, red, green, blue)
-    if not frame.workingState then
-        return
-    end
-
-    frame._isInternalSynchronize = true
-    frame.workingState[state.redKey] = red
-    frame.workingState[state.greenKey] = green
-    frame.workingState[state.blueKey] = blue
-    frame._isInternalSynchronize = false
-
-    if frame:UpdateFromState(frame.workingState) then
-        editMode:SetDirty(frame)
-    end
-    editMode:RefreshConfigUI(frame)
 end
 
 local function UpdateStatePreview(state, stateControls, workingState)
@@ -162,6 +80,58 @@ local function RefreshControls(workingState)
     refreshing = false
 end
 
+local function SetWorkingColor(state, red, green, blue)
+    if not frame.workingState then
+        return
+    end
+
+    frame._isInternalSynchronize = true
+    frame.workingState[state.redKey] = red
+    frame.workingState[state.greenKey] = green
+    frame.workingState[state.blueKey] = blue
+    frame._isInternalSynchronize = false
+
+    if frame:UpdateFromState(frame.workingState) then
+        editMode:SetDirty(frame)
+    end
+end
+
+local function PreviewColor(picker, red, green, blue)
+    picker.red = red
+    picker.green = green
+    picker.blue = blue
+    picker.controls.colorTexture:SetColorTexture(red, green, blue, 1)
+    picker.controls.preview:SetTextColor(red, green, blue)
+    addon.PreviewStateColor(picker.state.id, red, green, blue)
+end
+
+ColorPickerFrame:HookScript("OnHide", function()
+    local picker = activeColorPicker
+    activeColorPicker = nil
+    if not picker then
+        return
+    end
+
+    if picker.cancelled then
+        addon.RefreshAppearance()
+        RefreshControls(frame.workingState)
+    else
+        SetWorkingColor(picker.state, picker.red, picker.green, picker.blue)
+    end
+end)
+
+local function CancelActiveColorPicker()
+    local picker = activeColorPicker
+    if not picker then
+        return
+    end
+
+    activeColorPicker = nil
+    PreviewColor(picker, picker.previousRed, picker.previousGreen, picker.previousBlue)
+    addon.RefreshAppearance()
+    ColorPickerFrame:Hide()
+end
+
 local function CreateColorButton(parent, state, stateControls)
     local button = CreateFrame("Button", nil, parent)
     button:SetSize(24, 24)
@@ -181,32 +151,38 @@ local function CreateColorButton(parent, state, stateControls)
             return
         end
 
-        local previous = {
-            r = workingState[state.redKey],
-            g = workingState[state.greenKey],
-            b = workingState[state.blueKey],
-            wasDirty = frame.isDirty,
-        }
+        CancelActiveColorPicker()
 
-        local function ApplyPickerColor()
-            local red, green, blue = ColorPickerFrame:GetColorRGB()
-            SetWorkingColor(state, red, green, blue)
-        end
+        local picker = {
+            state = state,
+            controls = stateControls,
+            previousRed = workingState[state.redKey],
+            previousGreen = workingState[state.greenKey],
+            previousBlue = workingState[state.blueKey],
+        }
+        picker.red = picker.previousRed
+        picker.green = picker.previousGreen
+        picker.blue = picker.previousBlue
 
         ColorPickerFrame:SetupColorPickerAndShow({
-            r = previous.r,
-            g = previous.g,
-            b = previous.b,
+            r = picker.red,
+            g = picker.green,
+            b = picker.blue,
             hasOpacity = false,
-            swatchFunc = ApplyPickerColor,
+            swatchFunc = function()
+                PreviewColor(picker, ColorPickerFrame:GetColorRGB())
+            end,
             cancelFunc = function()
-                SetWorkingColor(state, previous.r, previous.g, previous.b)
-                if not previous.wasDirty then
-                    frame.isDirty = false
-                    editMode:RefreshConfigUI(frame)
-                end
+                picker.cancelled = true
+                PreviewColor(
+                    picker,
+                    picker.previousRed,
+                    picker.previousGreen,
+                    picker.previousBlue
+                )
             end,
         })
+        activeColorPicker = picker
     end)
 
     return button
@@ -273,8 +249,8 @@ local function CreateAppearanceControls(parent, state)
                 end,
                 fontName
             )
-            radio:AddInitializer(function(button)
-                button.fontString:SetFontObject(fontObject)
+            radio:AddInitializer(function(menuButton)
+                menuButton.fontString:SetFontObject(fontObject)
             end)
         end
     end)
@@ -334,18 +310,31 @@ local function CreateWordingControls(parent)
     controls.wordingDropdown = dropdown
 end
 
-local function LayoutSections(panel, resizeHost)
+local function ResizeDialog(panel)
+    if not dialog then
+        return
+    end
+
+    dialog:SetHeight(
+        DIALOG_HEADER_HEIGHT
+            + panel:GetHeight()
+            + DIALOG_FOOTER_HEIGHT
+            + DIALOG_PADDING
+    )
+end
+
+local function LayoutSections(panel, resizeDialog)
     local offset = -4
     for _, section in ipairs(panel.sections) do
         section:ClearAllPoints()
-        section:SetPoint("TOPLEFT", 10, offset)
-        section:SetPoint("RIGHT", panel, "RIGHT", -10, 0)
+        section:SetPoint("TOPLEFT", 0, offset)
+        section:SetPoint("RIGHT", panel, "RIGHT", 0, 0)
         offset = offset - section:GetHeight() - 4
     end
 
     panel:SetHeight(-offset)
-    if resizeHost then
-        RefreshHostConfig(panel:GetHeight())
+    if resizeDialog then
+        ResizeDialog(panel)
     end
 end
 
@@ -403,7 +392,8 @@ end
 
 local function CreateSettingsPanel(parent)
     local panel = CreateFrame("Frame", nil, parent)
-    panel:SetWidth(400)
+    panel:SetPoint("TOPLEFT")
+    panel:SetPoint("TOPRIGHT")
     panel.sections = {}
 
     local generalSection = CreateSection(panel, "General", 68)
@@ -412,12 +402,13 @@ local function CreateSettingsPanel(parent)
     local wordingSection = CreateSection(panel, "Wording", 70)
     CreateWordingControls(wordingSection.content)
 
-    local appearanceSection = CreateSection(panel, "Appearance", 240)
+    local appearanceHeight = #appearanceStates * APPEARANCE_ROW_SPACING
+    local appearanceSection = CreateSection(panel, "Appearance", appearanceHeight)
     for index, state in ipairs(appearanceStates) do
         local row = CreateFrame("Frame", nil, appearanceSection.content)
-        row:SetPoint("TOPLEFT", 0, -((index - 1) * 80))
+        row:SetPoint("TOPLEFT", 0, -((index - 1) * APPEARANCE_ROW_SPACING))
         row:SetPoint("RIGHT", appearanceSection.content, "RIGHT", 0, 0)
-        row:SetHeight(76)
+        row:SetHeight(APPEARANCE_ROW_HEIGHT)
         CreateAppearanceControls(row, state)
 
         if index < #appearanceStates then
@@ -433,16 +424,81 @@ local function CreateSettingsPanel(parent)
     return panel
 end
 
-function frame:GetOrCreateFrameSpecificControls(parent)
-    SetSimpleLustConfigMode(true)
-    if not settingsPanel then
-        settingsPanel = CreateSettingsPanel(parent)
+local function ResetCustomSettings()
+    if not frame.workingState then
+        return
     end
 
-    RefreshControls(self.workingState)
-    return controls, settingsPanel
+    frame._isInternalSynchronize = true
+    addon.CopyCustomSettings(addon.CreateDefaultCustomSettings(), frame.workingState)
+    frame._isInternalSynchronize = false
+
+    if frame:UpdateFromState(frame.workingState) then
+        editMode:SetDirty(frame)
+    end
 end
 
-function frame:OnConfigRefresh(_, workingState)
-    RefreshControls(workingState)
+local function CreateDialog()
+    local settingsDialog = CreateFrame("Frame", "SimpleLustEditModeSettingsDialog", UIParent)
+    settingsDialog:SetWidth(DIALOG_WIDTH)
+    settingsDialog:SetPoint("RIGHT", UIParent, "RIGHT", -100, 0)
+    settingsDialog:SetFrameStrata("DIALOG")
+    settingsDialog:SetFrameLevel(200)
+    settingsDialog:SetClampedToScreen(true)
+    settingsDialog:SetMovable(true)
+    settingsDialog:EnableMouse(true)
+    settingsDialog:RegisterForDrag("LeftButton")
+    settingsDialog:SetScript("OnDragStart", settingsDialog.StartMoving)
+    settingsDialog:SetScript("OnDragStop", settingsDialog.StopMovingOrSizing)
+    settingsDialog:Hide()
+
+    settingsDialog.Border = CreateFrame(
+        "Frame",
+        nil,
+        settingsDialog,
+        "DialogBorderTranslucentTemplate"
+    )
+
+    settingsDialog.title = settingsDialog:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
+    settingsDialog.title:SetPoint("TOP", 0, -15)
+    settingsDialog.title:SetText("SimpleLust")
+
+    settingsDialog.close = CreateFrame("Button", nil, settingsDialog, "UIPanelCloseButton")
+    settingsDialog.close:SetPoint("TOPRIGHT")
+
+    settingsDialog.content = CreateFrame("Frame", nil, settingsDialog)
+    settingsDialog.content:SetPoint("TOPLEFT", DIALOG_PADDING, -DIALOG_HEADER_HEIGHT)
+    settingsDialog.content:SetPoint("TOPRIGHT", -DIALOG_PADDING, -DIALOG_HEADER_HEIGHT)
+
+    settingsDialog.reset = CreateFrame("Button", nil, settingsDialog, "UIPanelButtonTemplate")
+    settingsDialog.reset:SetSize(140, 26)
+    settingsDialog.reset:SetPoint("BOTTOM", 0, DIALOG_PADDING)
+    settingsDialog.reset:SetText("Reset to Default")
+    settingsDialog.reset:SetScript("OnClick", ResetCustomSettings)
+
+    settingsPanel = CreateSettingsPanel(settingsDialog.content)
+    ResizeDialog(settingsPanel)
+
+    settingsDialog:SetScript("OnHide", CancelActiveColorPicker)
+    return settingsDialog
+end
+
+function addon.RefreshSettingsUI()
+    if settingsPanel and frame.workingState then
+        RefreshControls(frame.workingState)
+    end
+end
+
+function addon.ShowEditModeSettings()
+    if not dialog then
+        dialog = CreateDialog()
+    end
+    RefreshControls(frame.workingState)
+    dialog:Show()
+end
+
+function addon.HideEditModeSettings()
+    if dialog then
+        dialog:Hide()
+    end
 end

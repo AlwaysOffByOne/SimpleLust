@@ -19,7 +19,7 @@ Select SimpleLust in Edit Mode to open its configuration panel. Settings are org
 Settings are saved separately for each Edit Mode layout.
 
 ## Third-party libraries
-SimpleLust embeds the unmodified [FerrozEditModeLib](https://github.com/ferroz-argentdawn/FerrozEditModeLib) 1.1.20 source under the MIT License. License and provenance details are included in `Libs/FerrozEditModeLib`.
+SimpleLust requires [FerrozEditModeLib](https://www.curseforge.com/wow/addons/ferrozeditmodelib) 1.1.20 or newer for Edit Mode positioning and layout persistence.
 
 ## Known issues
 The in-combat Lust buff timer still uses the exhaustion debuff as a fallback when the buff aura is unavailable.

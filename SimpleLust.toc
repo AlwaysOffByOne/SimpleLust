@@ -3,10 +3,10 @@
 ## Notes: Minimal Lust tracker
 ## Version: 1.0.0
 ## SavedVariables: SimpleLustDB
+## RequiredDeps: FerrozEditModeLib
 
 ## Category: Self Made
 
-load_core_libs.xml
 SimpleLustConstants.lua
 SimpleLust.lua
 SimpleLustEditMode.lua

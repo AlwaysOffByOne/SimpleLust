@@ -1,7 +1,0 @@
-<Ui xmlns="http://www.blizzard.com/wow/ui/">
-    <Script file="Libs\FerrozEditModeLib\Libs\LibStub\LibStub.lua"/>
-    <Script file="Libs\FerrozEditModeLib\Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua"/>
-    <Script file="Libs\FerrozEditModeLib\Libs\LibSharedMedia-3.0\LibSharedMedia-3.0.lua"/>
-    <Script file="Libs\FerrozEditModeLib\FerrozEditModeLib.lua"/>
-    <Script file="Libs\FerrozEditModeLib\FerrozConfigWindow.lua"/>
-</Ui>

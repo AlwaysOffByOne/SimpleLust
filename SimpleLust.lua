@@ -85,6 +85,12 @@ local function ApplyAppearance(stateID)
     )
 end
 
+local function PreviewStateColor(stateID, red, green, blue)
+    if currentDisplayState == stateID then
+        frame.text:SetTextColor(red, green, blue)
+    end
+end
+
 local function UpdateVisibility()
     if frame.isEditing or not appliedSettings.hideOutOfCombat or InCombatLockdown() then
         frame:Show()
@@ -126,6 +132,9 @@ local function ApplyCustomSettings(settings)
 
     ApplyAppearance(currentDisplayState)
     UpdateVisibility()
+    if addon.RefreshSettingsUI then
+        addon.RefreshSettingsUI()
+    end
     return changed
 end
 
@@ -206,6 +215,10 @@ addon.CopyCustomSettings = CopyCustomSettings
 addon.CaptureCustomSettings = CaptureCustomSettings
 addon.ApplyCustomSettings = ApplyCustomSettings
 addon.UpdateVisibility = UpdateVisibility
+addon.RefreshAppearance = function()
+    ApplyAppearance(currentDisplayState)
+end
+addon.PreviewStateColor = PreviewStateColor
 addon.GetPreviewText = GetPreviewText
 addon.SetFontInstanceFont = SetFontInstanceFont
 addon.ResolveFontPath = ResolveFontPath
