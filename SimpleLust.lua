@@ -40,9 +40,9 @@ local function GetAuraTimeValue(list)
         end
     end
 
-    if not found then 
+    if not found then
         return nil
-    end 
+    end
 end
 
 local function DeriveBuffTime()
