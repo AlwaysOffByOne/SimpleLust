@@ -1,0 +1,18 @@
+FerrozEditModeLib
+=================
+
+Upstream: https://github.com/ferroz-argentdawn/FerrozEditModeLib
+Commit: cf018a039300d0600b14e1b50fa665596afeb5b5
+Version: 1.1.20
+
+The library is distributed under the MIT License in License.txt.
+
+FerrozEditModeLib.lua and FerrozConfigWindow.lua are included without source
+modifications. SimpleLust-specific behavior is implemented outside the library.
+
+Embedded dependency licenses:
+- LibStub is dedicated to the public domain in Libs\LibStub\LibStub.lua.
+- CallbackHandler-1.0 is distributed under the terms in
+  Libs\CallbackHandler-1.0\LICENSE.txt.
+- LibSharedMedia-3.0 is distributed under the GNU LGPL v2.1 in
+  Libs\LibSharedMedia-3.0\LICENSE.txt.
