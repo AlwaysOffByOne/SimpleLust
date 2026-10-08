@@ -1,10 +1,34 @@
 # SimpleLust
-Simple lust tracker addon for wow. Based on old addons before the purge.
 
-## Three States
-<img width="187" height="62" alt="image" src="https://github.com/user-attachments/assets/b5a78e9c-6e44-49bb-affd-416a871728e0" />
-<img width="225" height="56" alt="image" src="https://github.com/user-attachments/assets/e60e0926-5ef9-4b91-bcff-4d5a40d43540" />
-<img width="206" height="57" alt="image" src="https://github.com/user-attachments/assets/35245e34-1800-4dfd-bce3-50b166adb088" />
+A minimal World of Warcraft tracker for Bloodlust, Heroism, and equivalent effects.
 
-## Known issues
-Currently there is no position updates or any sort of settings. This comes as is.
+## Display States
+
+- **Active** — shows the estimated remaining buff duration.
+- **Cooldown** — shows the remaining exhaustion duration.
+- **Ready** — shows when the effect can be used.
+
+## Edit Mode
+
+Open WoW Edit Mode and select SimpleLust to:
+
+- Move the tracker.
+- Hide it while out of combat.
+- Choose Lust, Heroism, or Basic wording.
+- Set the font, size, and color for each display state.
+
+Position and settings are saved per Edit Mode layout.
+
+## Dependency
+
+Requires [FerrozEditModeLib](https://www.curseforge.com/wow/addons/ferrozeditmodelib) 1.1.20 or newer.
+
+## Tracking Limitation
+
+WoW does not consistently expose the active Lust buff duration to SimpleLust during combat. When the buff is unavailable, SimpleLust estimates the remaining 40-second active duration from the 10-minute exhaustion debuff:
+
+```text
+active time remaining = exhaustion time remaining - 9:20
+```
+
+The tracker uses the actual buff duration whenever WoW provides it; otherwise it uses this calculation.

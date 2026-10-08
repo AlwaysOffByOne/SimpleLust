@@ -1,8 +1,12 @@
 ## Interface: 120001
 ## Title: SimpleLust
+## Author: Fellvarg-Tanaris
 ## Notes: Minimal Lust tracker
-## Version: 0.1.0
+## Version: 1.0.0
+## SavedVariables: SimpleLustDB
+## RequiredDeps: FerrozEditModeLib
 
-## Category: Self Made
-
+SimpleLustConstants.lua
 SimpleLust.lua
+SimpleLustEditMode.lua
+SimpleLustEditModeSettings.lua
