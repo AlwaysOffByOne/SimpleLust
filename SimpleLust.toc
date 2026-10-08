@@ -1,5 +1,6 @@
 ## Interface: 120001
 ## Title: SimpleLust
+## Author: Fellvarg-Tanaris
 ## Notes: Minimal Lust tracker
 ## Version: 1.0.0
 ## SavedVariables: SimpleLustDB
