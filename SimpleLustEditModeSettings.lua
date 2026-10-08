@@ -310,12 +310,14 @@ local function CreateWordingControls(parent)
     controls.wordingDropdown = dropdown
 end
 
-local function ResizeDialog(panel)
-    if not dialog then
+local function ResizeDialog(panel, targetDialog)
+    targetDialog = targetDialog or dialog
+    if not targetDialog then
         return
     end
 
-    dialog:SetHeight(
+    targetDialog.content:SetHeight(panel:GetHeight())
+    targetDialog:SetHeight(
         DIALOG_HEADER_HEIGHT
             + panel:GetHeight()
             + DIALOG_FOOTER_HEIGHT
@@ -477,7 +479,7 @@ local function CreateDialog()
     settingsDialog.reset:SetScript("OnClick", ResetCustomSettings)
 
     settingsPanel = CreateSettingsPanel(settingsDialog.content)
-    ResizeDialog(settingsPanel)
+    ResizeDialog(settingsPanel, settingsDialog)
 
     settingsDialog:SetScript("OnHide", CancelActiveColorPicker)
     return settingsDialog

@@ -92,13 +92,6 @@ local function InitializeEditMode()
 
     editMode:Register(frame, settings, CreateDefaultEditModeState())
     hooksecurefunc(EditModeManagerFrame, "SelectLayout", QueueCurrentLayout)
-    hooksecurefunc(EditModeManagerFrame, "SelectSystem", function()
-        if selection.isSelected then
-            selection.isSelected = false
-            selection:ShowHighlighted()
-            addon.HideEditModeSettings()
-        end
-    end)
     QueueCurrentLayout()
     initialized = true
 end
