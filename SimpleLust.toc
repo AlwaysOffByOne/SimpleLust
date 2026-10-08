@@ -6,8 +6,6 @@
 ## SavedVariables: SimpleLustDB
 ## RequiredDeps: FerrozEditModeLib
 
-## Category: Self Made
-
 SimpleLustConstants.lua
 SimpleLust.lua
 SimpleLustEditMode.lua
